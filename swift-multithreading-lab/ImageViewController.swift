@@ -15,18 +15,36 @@ class ImageViewController : UIViewController, UIScrollViewDelegate {
     var scrollView: UIScrollView!
     var imageView: UIImageView!
     var activityIndicator: UIActivityIndicatorView!
+    var antiqueButton: UIActivityIndicatorView!
     
     override func viewDidLoad() {
         super.viewDidLoad()
         setupViews()
+        
+        activityIndicator = UIActivityIndicatorView(activityIndicatorStyle: .WhiteLarge)
+        activityIndicator.color = UIColor.cyanColor()
+        activityIndicator.center = view.center
+        view.addSubview(activityIndicator)
+      
     }
     
     @IBAction func antiqueButtonTapped(sender: AnyObject) {
-        filterImage { (result) in
-            result ? print("Image filtering complete") : print("Image filtering did not complete")
+        activityIndicator.startAnimating()
+        let queue =  NSOperationQueue()
+        queue.qualityOfService = .UserInitiated
+        queue.addOperationWithBlock{
+            
+            self.filterImage { (result) in
+                NSOperationQueue.mainQueue().addOperationWithBlock({
+                    result ? print("Image filtering complete") : print("Image filtering did not complete")
+                    //stops activity indicator after image is done filtering
+                    self.activityIndicator.stopAnimating()
+                })
+            }
         }
+        
     }
-    
+
     func filterImage(completion: (Bool) -> ()) {
         guard let image = imageView?.image, cgimg = image.CGImage else {
             print("imageView doesn't have an image!")
@@ -59,9 +77,12 @@ class ImageViewController : UIViewController, UIScrollViewDelegate {
                 let finalResult = UIGraphicsGetImageFromCurrentImageContext()
                 UIGraphicsEndImageContext()
                 
-                print("Setting final result")
-                self.imageView?.image = finalResult
-                completion(true)
+                NSOperationQueue.mainQueue().addOperationWithBlock {
+                    print("Setting final result")
+                    self.imageView?.image = finalResult
+                    completion(true)
+                }
+                
             }
         }
     }
@@ -112,3 +133,4 @@ extension ImageViewController {
         scrollView.zoomScale = 1.0
     }
 }
+
